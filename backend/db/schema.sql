@@ -753,6 +753,7 @@ CREATE TABLE IF NOT EXISTS course_lessons (
   contentType ENUM('VIDEO','TEXT') NOT NULL DEFAULT 'VIDEO',
   videoUrl VARCHAR(191) NULL,
   content TEXT NULL,
+  documents JSON NULL,
   durationMinutes INT NOT NULL DEFAULT 0,
   isPreview TINYINT(1) NOT NULL DEFAULT 0,
   displayOrder INT NOT NULL DEFAULT 0,
