@@ -351,8 +351,8 @@ class AdminLearningService {
     const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
     return execute(
-      `SELECT cl.id, cl.courseId, cl.sectionId, cl.title, cl.contentType, cl.videoUrl, cl.durationMinutes,
-              cl.isPreview, cl.displayOrder, cl.updatedAt,
+      `SELECT cl.id, cl.courseId, cl.sectionId, cl.title, cl.contentType, cl.videoUrl, cl.content,
+              cl.documents, cl.durationMinutes, cl.isPreview, cl.displayOrder, cl.updatedAt,
               cs.title AS sectionTitle,
               c.title AS courseTitle
          FROM course_lessons cl
@@ -372,6 +372,7 @@ class AdminLearningService {
       contentType = 'VIDEO',
       videoUrl = null,
       content = null,
+      documents = null,
       durationMinutes = 0,
       isPreview = false,
       displayOrder = 0,
@@ -382,26 +383,34 @@ class AdminLearningService {
     }
 
     const id = randomUUID();
+    const documentsJson = documents ? JSON.stringify(documents) : null;
+
     await execute(
       `INSERT INTO course_lessons (
-        id, sectionId, courseId, title, contentType, videoUrl, content,
+        id, sectionId, courseId, title, contentType, videoUrl, content, documents,
         durationMinutes, isPreview, displayOrder, createdAt, updatedAt
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-      [id, sectionId, courseId, title, contentType, videoUrl, content, durationMinutes, isPreview ? 1 : 0, displayOrder]
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      [id, sectionId, courseId, title, contentType, videoUrl, content, documentsJson, durationMinutes, isPreview ? 1 : 0, displayOrder]
     );
 
     return executeOne('SELECT * FROM course_lessons WHERE id = ? LIMIT 1', [id]);
   }
 
   async updateLesson(lessonId, payload) {
-    const allowed = ['sectionId', 'title', 'contentType', 'videoUrl', 'content', 'durationMinutes', 'isPreview', 'displayOrder'];
+    const allowed = ['sectionId', 'title', 'contentType', 'videoUrl', 'content', 'documents', 'durationMinutes', 'isPreview', 'displayOrder'];
     const fields = [];
     const values = [];
 
     allowed.forEach((key) => {
       if (payload[key] !== undefined) {
         fields.push(`${key} = ?`);
-        values.push(key === 'isPreview' ? (payload[key] ? 1 : 0) : payload[key]);
+        if (key === 'isPreview') {
+          values.push(payload[key] ? 1 : 0);
+        } else if (key === 'documents') {
+          values.push(payload[key] ? JSON.stringify(payload[key]) : null);
+        } else {
+          values.push(payload[key]);
+        }
       }
     });
 
